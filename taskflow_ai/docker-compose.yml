@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # The Python Backend
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/taskflow
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+
+  # The PostgreSQL Database
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=taskflow
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:

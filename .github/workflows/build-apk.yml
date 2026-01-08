@@ -1,0 +1,72 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'taskflow_mobile/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+    
+    - uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+    
+    - name: Get dependencies
+      run: flutter pub get
+      working-directory: ./taskflow_mobile
+    
+    - name: Analyze code
+      run: flutter analyze
+      working-directory: ./taskflow_mobile
+      continue-on-error: true
+    
+    - name: Build APK
+      run: flutter build apk --release
+      working-directory: ./taskflow_mobile
+    
+    - name: Get APK info
+      run: |
+        ls -lh build/app/outputs/flutter-apk/
+        echo "APK Size: $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)"
+      working-directory: ./taskflow_mobile
+    
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: taskflow-v1.1.0-release
+        path: taskflow_mobile/build/app/outputs/flutter-apk/app-release.apk
+        
+    - name: Create Release Notes
+      run: |
+        echo "# TaskFlow AI v1.1.0 - Ultimate Upgrade" > release-notes.txt
+        echo "" >> release-notes.txt
+        echo "## New Features:" >> release-notes.txt
+        echo "- 🎙️ Voice Input with AI parsing" >> release-notes.txt
+        echo "- 🍅 Focus Timer (Pomodoro 25min)" >> release-notes.txt
+        echo "- 🌙 Dark Mode support" >> release-notes.txt
+        echo "- 💾 Data Backup & Export to JSON" >> release-notes.txt
+        echo "" >> release-notes.txt
+        echo "## Build Info:" >> release-notes.txt
+        echo "- Build Date: $(date)" >> release-notes.txt
+        echo "- Flutter Version: 3.24.5" >> release-notes.txt
+        echo "- APK Size: $(du -h taskflow_mobile/build/app/outputs/flutter-apk/app-release.apk | cut -f1)" >> release-notes.txt
+        cat release-notes.txt
+        
+    - name: Upload Release Notes
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-notes
+        path: release-notes.txt
