@@ -1,0 +1,53 @@
+name: Build APK (Simple)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Flutter APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: 'stable'
+          cache: true
+      
+      - name: Flutter Doctor
+        run: flutter doctor -v
+      
+      - name: Install Dependencies
+        working-directory: taskflow_mobile
+        run: flutter pub get
+      
+      - name: Build APK
+        working-directory: taskflow_mobile
+        run: flutter build apk --release --verbose
+      
+      - name: List Build Output
+        working-directory: taskflow_mobile
+        run: |
+          echo "Build completed!"
+          ls -lh build/app/outputs/flutter-apk/
+          file build/app/outputs/flutter-apk/app-release.apk
+      
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaskFlow-APK
+          path: taskflow_mobile/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
